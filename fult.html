@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinVault — Financial Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --gold: #f5c842;
+    --gold2: #e8a020;
+    --navy: #0a0f2e;
+    --navy2: #111840;
+    --navy3: #1a2460;
+    --cyan: #00e5ff;
+    --green: #00ff9d;
+    --red: #ff4d6d;
+    --purple: #a78bfa;
+    --white: #f0f4ff;
+    --glass: rgba(255,255,255,0.05);
+    --glass2: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.1);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,229,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(245,200,66,0.07) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 50% at 50% 50%, rgba(26,36,96,0.8) 0%, var(--navy) 100%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  body::after {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,15,46,0.85);
+    backdrop-filter: blur(20px);
+  }
+
+  .logo { display: flex; align-items: center; gap: 12px; }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 20px rgba(245,200,66,0.4), 0 4px 15px rgba(0,0,0,0.3);
+    transform: rotate(-5deg);
+    transition: transform 0.3s;
+  }
+  .logo-icon:hover { transform: rotate(5deg) scale(1.1); }
+  .logo-text { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; }
+  .logo-text span { color: var(--gold); }
+
+  .header-right { display:flex; align-items:center; gap:12px; }
+
+  .live-badge {
+    display:flex; align-items:center; gap:8px;
+    background: rgba(0,255,157,0.08);
+    border: 1px solid rgba(0,255,157,0.2);
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green);
+  }
+  .live-dot { width:7px; height:7px; background:var(--green); border-radius:50%; box-shadow:0 0 8px var(--green); animation: pulse 2s infinite; }
+
+  nav {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    gap: 2px;
+    padding: 16px 40px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display:none; }
+
+  .tab {
+    padding: 11px 20px;
+    border: none;
+    background: transparent;
+    color: rgba(240,244,255,0.5);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    position: relative;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .tab::after {
+    content:'';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .tab:hover { color: var(--white); background: var(--glass); }
+  .tab.active { color: var(--gold); background: linear-gradient(180deg, rgba(245,200,66,0.1), transparent); }
+  .tab.active::after { transform: scaleX(1); }
+  .tab.inv-tab.active { color: var(--purple); background: linear-gradient(180deg, rgba(167,139,250,0.1), transparent); }
+  .tab.inv-tab.active::after { background: var(--purple); }
+  .tab-icon { font-size: 15px; }
+
+  main {
+    position: relative;
+    z-index: 5;
+    padding: 36px 40px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  .page { display: none; animation: fadeSlide 0.4s ease; }
+  .page.active { display: block; }
+
+  @keyframes fadeSlide {
+    from { opacity:0; transform: translateY(16px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .card-3d {
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    backdrop-filter: blur(20px);
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-3d::before {
+    content:'';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+    pointer-events: none; border-radius: inherit;
+  }
+  .card-3d:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 30px rgba(0,229,255,0.06);
+    border-color: rgba(0,229,255,0.15);
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 20px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+  }
+  .stat-card::after {
+    content:'';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent, var(--gold));
+    box-shadow: 0 0 12px var(--accent, var(--gold));
+  }
+  .stat-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+  .stat-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+  .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.6; margin-bottom: 5px; }
+  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; color: var(--accent, var(--gold)); }
+
+  /* NET WORTH HERO CARD */
+  .networth-hero {
+    background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(0,229,255,0.06), rgba(245,200,66,0.06));
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 20px;
+    padding: 32px 36px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .networth-hero::before {
+    content:'';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .nw-main { display:flex; flex-direction:column; gap:4px; }
+  .nw-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6; }
+  .nw-value { font-family: 'JetBrains Mono', monospace; font-size: clamp(28px, 5vw, 44px); font-weight: 500; color: var(--purple); text-shadow: 0 0 30px rgba(167,139,250,0.4); }
+  .nw-sub { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+  .nw-breakdown { display:flex; gap:28px; flex-wrap:wrap; }
+  .nw-item { text-align: center; }
+  .nw-item-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; }
+  .nw-item-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-top: 3px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  @media (max-width: 900px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    main { padding: 20px; }
+    nav { padding: 12px 16px 0; }
+    header { padding: 14px 20px; }
+    .nw-breakdown { gap:16px; }
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content:''; flex:1; height: 1px;
+    background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
+    opacity: 0.3;
+  }
+  .section-title.purple-title { color: var(--purple); }
+  .section-title.purple-title::after { background: linear-gradient(90deg, var(--purple) 0%, transparent 100%); }
+
+  .input-group { margin-bottom: 16px; }
+  .input-label {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    opacity: 0.7; margin-bottom: 7px; display: block;
+  }
+
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--white);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(245,200,66,0.1);
+  }
+  select option { background: var(--navy2); color: var(--white); }
+  textarea { min-height: 80px; resize: vertical; }
+
+  .btn {
+    padding: 12px 24px;
+    border: none; border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.8px; cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    position: relative; overflow: hidden;
+  }
+  .btn::after {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    pointer-events:none;
+  }
+  .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: var(--navy); box-shadow: 0 4px 20px rgba(245,200,66,0.3); }
+  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245,200,66,0.5); }
+  .btn-cyan { background: linear-gradient(135deg, #00b4cc, var(--cyan)); color: var(--navy); box-shadow: 0 4px 20px rgba(0,229,255,0.2); }
+  .btn-cyan:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,229,255,0.4); }
+  .btn-red { background: linear-gradient(135deg, #cc1a35, var(--red)); color: white; box-shadow: 0 4px 20px rgba(255,77,109,0.2); }
+  .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,77,109,0.4); }
+  .btn-green { background: linear-gradient(135deg, #00cc7a, var(--green)); color: var(--navy); box-shadow: 0 4px 20px rgba(0,255,157,0.2); }
+  .btn-green:hover { transform: translateY(-2px); }
+  .btn-purple { background: linear-gradient(135deg, #7c3aed, var(--purple)); color: white; box-shadow: 0 4px 20px rgba(167,139,250,0.25); }
+  .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(167,139,250,0.4); }
+  .btn-sm { padding: 7px 14px; font-size: 11px; }
+  .btn-outline-green {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.8px; cursor: pointer;
+    padding: 8px 16px; border-radius: 8px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-outline-green:hover { background: rgba(0,255,157,0.1); transform: translateY(-1px); }
+
+  .result-box {
+    background: linear-gradient(135deg, rgba(245,200,66,0.07), rgba(0,229,255,0.04));
+    border: 1px solid rgba(245,200,66,0.25);
+    border-radius: 14px; padding: 22px; margin-top: 18px;
+  }
+  .result-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-key { opacity: 0.7; }
+  .result-val { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--gold); }
+  .result-val.green { color: var(--green); }
+  .result-val.red { color: var(--red); }
+  .result-val.cyan { color: var(--cyan); }
+  .result-val.purple { color: var(--purple); }
+
+  .progress-wrap { background: rgba(255,255,255,0.05); border-radius: 50px; height: 8px; overflow: hidden; margin-top: 6px; }
+  .progress-bar { height:100%; border-radius:50px; background: linear-gradient(90deg, var(--gold), var(--cyan)); box-shadow: 0 0 10px rgba(245,200,66,0.4); transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  .data-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .data-table th { text-align:left; padding:10px 14px; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); border-bottom:1px solid rgba(245,200,66,0.2); }
+  .data-table td { padding:13px 14px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:13px; vertical-align:middle; }
+  .data-table tr:hover td { background:rgba(255,255,255,0.03); }
+  .data-table tr:last-child td { border-bottom:none; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 50px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .badge-green { background:rgba(0,255,157,0.15); color:var(--green); border:1px solid rgba(0,255,157,0.3); }
+  .badge-red { background:rgba(255,77,109,0.15); color:var(--red); border:1px solid rgba(255,77,109,0.3); }
+  .badge-gold { background:rgba(245,200,66,0.15); color:var(--gold); border:1px solid rgba(245,200,66,0.3); }
+  .badge-cyan { background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid rgba(0,229,255,0.3); }
+  .badge-purple { background:rgba(167,139,250,0.15); color:var(--purple); border:1px solid rgba(167,139,250,0.3); }
+
+  .donut-wrap { display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+  .donut-svg { flex-shrink:0; filter:drop-shadow(0 0 20px rgba(245,200,66,0.2)); }
+  .legend-item { display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:13px; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  .page-hero { text-align:center; margin-bottom:32px; padding:24px 0; }
+  .page-hero h1 { font-family:'Syne',sans-serif; font-size:clamp(26px,4.5vw,44px); font-weight:800; line-height:1.1; margin-bottom:10px; }
+  .page-hero h1 span { color:var(--gold); }
+  .page-hero h1 span.purple { color:var(--purple); }
+  .page-hero p { opacity:0.55; font-size:14px; max-width:480px; margin:0 auto; }
+
+  .khata-entry {
+    display:flex; align-items:center; gap:12px;
+    padding:13px 15px;
+    background:var(--glass); border:1px solid var(--border);
+    border-radius:12px; margin-bottom:8px; transition:all 0.2s;
+  }
+  .khata-entry:hover { background:var(--glass2); transform:translateX(4px); border-color:rgba(245,200,66,0.2); }
+  .khata-entry .entry-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .income-icon { background:rgba(0,255,157,0.15); }
+  .expense-icon { background:rgba(255,77,109,0.15); }
+  .entry-details { flex:1; min-width:0; }
+  .entry-name { font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .entry-meta { font-size:11px; opacity:0.5; margin-top:2px; }
+  .entry-amount { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:500; }
+
+  .bar-chart { display:flex; gap:4px; align-items:flex-end; height:100px; padding:0 4px; }
+  .bar { flex:1; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--gold),var(--gold2)); min-width:10px; transition:height 1s cubic-bezier(0.34,1.56,0.64,1); position:relative; cursor:pointer; }
+  .bar:hover { filter:brightness(1.3); }
+  .bar.invested { background:linear-gradient(180deg,rgba(0,229,255,0.6),rgba(0,229,255,0.2)); }
+  .tooltip { position:absolute; bottom:calc(100%+6px); left:50%; transform:translateX(-50%); background:var(--navy2); border:1px solid var(--border); border-radius:8px; padding:5px 9px; font-size:10px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.2s; z-index:10; }
+  .bar:hover .tooltip { opacity:1; }
+
+  .emi-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; font-family:'JetBrains Mono',monospace; }
+  .emi-row:last-child { border-bottom:none; }
+
+  .chip-select { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .chip {
+    padding:7px 16px; border-radius:50px; border:1px solid var(--border);
+    background:transparent; color:var(--white);
+    font-family:'Syne',sans-serif; font-size:13px; font-weight:600;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .chip.active, .chip:hover { background:rgba(245,200,66,0.15); border-color:var(--gold); color:var(--gold); }
+  .chip.purple-chip.active, .chip.purple-chip:hover { background:rgba(167,139,250,0.15); border-color:var(--purple); color:var(--purple); }
+
+  .empty-state { text-align:center; padding:50px 20px; opacity:0.4; }
+  .empty-state .empty-icon { font-size:44px; margin-bottom:14px; }
+  .empty-state p { font-size:14px; }
+
+  #toast {
+    position:fixed; bottom:28px; left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:var(--navy2); border:1px solid var(--gold);
+    border-radius:12px; padding:12px 22px;
+    font-size:14px; font-weight:600; color:var(--gold);
+    transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index:999; box-shadow:0 0 30px rgba(245,200,66,0.2);
+  }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  .divider { height:1px; background:var(--border); margin:22px 0; }
+  .row { display:flex; gap:12px; align-items:flex-start; }
+  .row .input-group { flex:1; margin-bottom:0; }
+  .mb20 { margin-bottom:20px; }
+  .mb10 { margin-bottom:10px; }
+  .mt20 { margin-top:20px; }
+  .sticky-summary { position:sticky; top:20px; }
+
+  /* INVESTMENT TAB SPECIFIC */
+  .inv-table-wrap { overflow-x:auto; }
+  .stock-row td:first-child { font-weight:600; }
+
+  .inv-mode-content { display:none; }
+  .inv-mode-content.active { display:block; }
+
+  .return-pill {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:3px 10px; border-radius:20px; font-size:12px;
+    font-family:'JetBrains Mono',monospace; font-weight:500;
+  }
+  .return-pill.up { background:rgba(0,255,157,0.12); color:var(--green); border:1px solid rgba(0,255,157,0.25); }
+  .return-pill.down { background:rgba(255,77,109,0.12); color:var(--red); border:1px solid rgba(255,77,109,0.25); }
+
+  .khata-toolbar {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;
+  }
+  .khata-toolbar-right { display:flex; gap:8px; align-items:center; }
+
+  /* PORTFOLIO SUMMARY */
+  .port-summary {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:24px;
+  }
+  .port-stat {
+    background:rgba(167,139,250,0.06); border:1px solid rgba(167,139,250,0.15);
+    border-radius:12px; padding:16px 18px; text-align:center;
+  }
+  .port-stat-val { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:500; color:var(--purple); }
+  .port-stat-label { font-size:10px; text-transform:uppercase; letter-spacing:1px; opacity:0.5; margin-top:4px; }
+
+  @media(max-width:600px){ .port-summary { grid-template-columns:1fr 1fr; } }
+
+  /* FINANCE RULES */
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 28px;
+  }
+  .rule-card {
+    background: linear-gradient(135deg, rgba(167,139,250,0.07), rgba(0,229,255,0.04));
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 18px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .rule-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.3), 0 0 20px rgba(167,139,250,0.08);
+    border-color: rgba(167,139,250,0.35);
+  }
+  .rule-card::before {
+    content: '';
+    position: absolute; top: -30px; right: -30px;
+    width: 100px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .rule-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; font-weight: 500;
+    color: var(--purple);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  .rule-tagline {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; opacity: 0.55; margin-bottom: 16px;
+  }
+  .rule-segments {
+    display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .rule-seg {
+    flex: 1; min-width: 60px;
+    border-radius: 10px; padding: 10px 8px; text-align: center;
+  }
+  .rule-seg-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 500; line-height: 1;
+    margin-bottom: 4px;
+  }
+  .rule-seg-label { font-size: 10px; opacity: 0.65; font-weight: 600; letter-spacing: 0.5px; }
+  .rule-desc {
+    font-size: 12px; line-height: 1.7; opacity: 0.65; margin-bottom: 14px;
+  }
+  .rule-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rule-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
+    padding: 3px 9px; border-radius: 30px;
+    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2);
+    color: var(--purple); text-transform: uppercase;
+  }
+  .rule-tag.gold { background: rgba(245,200,66,0.1); border-color: rgba(245,200,66,0.25); color: var(--gold); }
+  .rule-tag.cyan { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.25); color: var(--cyan); }
+  .rule-tag.green { background: rgba(0,255,157,0.1); border-color: rgba(0,255,157,0.25); color: var(--green); }
+
+  .rule-calc-strip {
+    margin-top: 14px;
+    background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .rule-calc-strip input {
+    flex: 1; min-width: 120px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 10px;
+    color: var(--white); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    outline: none;
+  }
+  .rule-calc-strip input:focus { border-color: var(--purple); box-shadow: 0 0 0 2px rgba(167,139,250,0.15); }
+  .rule-calc-result {
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    margin-top: 8px; padding: 8px 10px;
+    background: rgba(167,139,250,0.06); border-radius: 8px;
+    display: none; flex-wrap: wrap; gap: 8px;
+  }
+  .rcr-item { display: flex; gap: 5px; align-items: center; }
+  .rcr-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .rcr-text { font-size: 11px; opacity: 0.8; }
+  .rcr-val { font-size: 12px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div id="toast">✓ Entry saved!</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">₹</div>
+    <div class="logo-text">Fin<span>Vault</span></div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Live Tracking
+    </div>
+  </div>
+</header>
+
+<nav>
+  <button class="tab active" onclick="switchTab('dashboard', this)"><span class="tab-icon">📊</span> Dashboard</button>
+  <button class="tab" onclick="switchTab('savings', this)"><span class="tab-icon">💰</span> Savings Calc</button>
+  <button class="tab" onclick="switchTab('sip', this)"><span class="tab-icon">📈</span> SIP / SWP</button>
+  <button class="tab" onclick="switchTab('emi', this)"><span class="tab-icon">🏠</span> EMI Calc</button>
+  <button class="tab" onclick="switchTab('khata', this)"><span class="tab-icon">📒</span> Khata Book</button>
+  <button class="tab inv-tab" onclick="switchTab('investments', this)"><span class="tab-icon">💹</span> Investments</button>
+  <button class="tab" onclick="switchTab('goals', this)"><span class="tab-icon">🎯</span> Goals</button>
+</nav>
+
+<main>
+
+<div id="dashboard" class="page active">
+  <div class="page-hero">
+    <h1>Your <span>Financial</span> Command Center</h1>
+    <p>Track, calculate, and grow your wealth — all in one place</p>
+  </div>
+
+  <div class="networth-hero">
+    <div class="nw-main">
+      <div class="nw-label">💎 Total Net Worth</div>
+      <div class="nw-value" id="nw-total">₹0</div>
+      <div class="nw-sub">Assets − Liabilities (Khata savings + Investments)</div>
+    </div>
+    <div class="nw-breakdown">
+      <div class="nw-item">
+        <div class="nw-item-val" id="nw-savings" style="color:var(--green)">₹0</div>
+        <div class="nw-item-label">💵 Net Savings</div>
+      </div>
+      <div class="nw-item">
+        <div class="nw-item-val" id="nw-investments" style="color:var(--purple)">₹0</div>
+        <div class="nw-item-label">📈 Investments</div>
+      </div>
+      <div class="nw-item">
+        <div class="nw-item-val" id="nw-goals-saved" style="color:var(--gold)">₹0</div>
+        <div class="nw-item-label">🎯 Goals Saved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card" style="--accent:var(--green)">
+      <span class="stat-icon">💵</span>
+      <div class="stat-label">Total Income</div>
+      <div class="stat-value" id="ds-income">₹0</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--red)">
+      <span class="stat-icon">🛒</span>
+      <div class="stat-label">Total Expense</div>
+      <div class="stat-value" id="ds-expense">₹0</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--gold)">
+      <span class="stat-icon">🏦</span>
+      <div class="stat-label">Net Savings</div>
+      <div class="stat-value" id="ds-savings">₹0</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--purple)">
+      <span class="stat-icon">💹</span>
+      <div class="stat-label">Portfolio Value</div>
+      <div class="stat-value" id="ds-portfolio">₹0</div>
+    </div>
+    <div class="stat-card" style="--accent:var(--cyan)">
+      <span class="stat-icon">📅</span>
+      <div class="stat-label">Transactions</div>
+      <div class="stat-value" id="ds-count">0</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card-3d">
+      <div class="section-title">Spending Breakdown</div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="140" height="140" viewBox="0 0 140 140" id="donutSvg">
+          <circle cx="70" cy="70" r="50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="22"/>
+          <text x="70" y="75" text-anchor="middle" fill="rgba(240,244,255,0.4)" font-size="11" font-family="Syne">No data</text>
+        </svg>
+        <div id="donutLegend" style="flex:1;"></div>
+      </div>
+    </div>
+    <div class="card-3d">
+      <div class="section-title">Recent Activity</div>
+      <div id="recentActivity">
+        <div class="empty-state"><div class="empty-icon">📭</div><p>Add transactions in Khata Book</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="two-col mt20">
+    <div class="card-3d">
+      <div class="section-title">Savings Rate</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;">
+        <span>Savings vs Income</span>
+        <span class="result-val" id="savingsRate">0%</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="savingsProgress" style="width:0%"></div>
+      </div>
+      <div style="font-size:11px;opacity:0.5;margin-top:8px;">Healthy savings rate: &gt; 20% of income</div>
+    </div>
+    <div class="card-3d">
+      <div class="section-title">Investment Portfolio</div>
+      <div id="dashPortfolio">
+        <div class="empty-state"><div class="empty-icon">💹</div><p>Add investments in the Investments tab</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="savings" class="page">
+  <div class="page-hero">
+    <h1><span>Savings</span> Calculator</h1>
+    <p>Calculate compound interest, FD returns, and goal-based savings</p>
+  </div>
+  <div class="chip-select">
+    <button class="chip active" onclick="setSavingsMode('compound',this)">Compound Interest</button>
+    <button class="chip" onclick="setSavingsMode('fd',this)">FD Returns</button>
+    <button class="chip" onclick="setSavingsMode('goal',this)">Goal Based</button>
+  </div>
+  <div class="two-col">
+    <div class="card-3d">
+      <div id="mode-compound">
+        <div class="section-title">Compound Interest</div>
+        <div class="input-group"><label class="input-label">Principal (₹)</label><input type="number" id="ci-principal" value="100000"></div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Rate (%)</label><input type="number" id="ci-rate" value="8"></div>
+          <div class="input-group"><label class="input-label">Years</label><input type="number" id="ci-years" value="5"></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Compounding</label>
+          <select id="ci-freq">
+            <option value="1">Annually</option>
+            <option value="2">Half-Yearly</option>
+            <option value="4" selected>Quarterly</option>
+            <option value="12">Monthly</option>
+          </select>
+        </div>
+        <button class="btn btn-gold" onclick="calcCompound()" style="width:100%">Calculate Returns</button>
+      </div>
+      <div id="mode-fd" style="display:none">
+        <div class="section-title">Fixed Deposit</div>
+        <div class="input-group"><label class="input-label">Deposit Amount (₹)</label><input type="number" id="fd-amount" value="500000"></div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Interest Rate (%)</label><input type="number" id="fd-rate" value="7.1"></div>
+          <div class="input-group"><label class="input-label">Tenure (Years)</label><input type="number" id="fd-years" value="3"></div>
+        </div>
+        <div class="input-group"><label class="input-label">Tax Bracket (%)</label><input type="number" id="fd-tax" value="10" placeholder="0 if exempt"></div>
+        <button class="btn btn-gold" onclick="calcFD()" style="width:100%">Calculate FD Returns</button>
+      </div>
+      <div id="mode-goal" style="display:none">
+        <div class="section-title">Goal-Based Savings</div>
+        <div class="input-group"><label class="input-label">Target Amount (₹)</label><input type="number" id="goal-target" value="1000000"></div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Current Savings (₹)</label><input type="number" id="goal-current" value="50000"></div>
+          <div class="input-group"><label class="input-label">Years to Goal</label><input type="number" id="goal-years" value="5"></div>
+        </div>
+        <div class="input-group"><label class="input-label">Expected Return (%)</label><input type="number" id="goal-rate" value="10"></div>
+        <button class="btn btn-gold" onclick="calcGoal()" style="width:100%">Calculate Monthly Savings</button>
+      </div>
+    </div>
+    <div class="card-3d sticky-summary">
+      <div class="section-title">Results</div>
+      <div id="savingsResult">
+        <div class="empty-state"><div class="empty-icon">🧮</div><p>Enter values and calculate</p></div>
+      </div>
+      <div id="savingsBarChart" style="margin-top:20px;display:none">
+        <div class="section-title">Year-wise Growth</div>
+        <div class="bar-chart" id="savingsChartBars"></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;opacity:0.4;margin-top:4px;padding:0 4px;">
+          <span>Y1</span><span id="chartMaxYear"></span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;">
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:2px;background:linear-gradient(var(--gold),var(--gold2));display:inline-block"></span>Total Value</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:2px;background:rgba(0,229,255,0.5);display:inline-block"></span>Invested</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sip" class="page">
+  <div class="page-hero">
+    <h1>SIP / <span>SWP</span> Calculator</h1>
+    <p>Systematic Investment & Withdrawal Plans</p>
+  </div>
+  <div class="chip-select">
+    <button class="chip active" onclick="setSIPMode('sip',this)">SIP — Invest</button>
+    <button class="chip" onclick="setSIPMode('swp',this)">SWP — Withdraw</button>
+    <button class="chip" onclick="setSIPMode('lumpsum',this)">Lump Sum</button>
+  </div>
+  <div class="two-col">
+    <div class="card-3d">
+      <div id="sip-form">
+        <div class="section-title" id="sipFormTitle">SIP Calculator</div>
+        <div class="input-group">
+          <label class="input-label" id="sipAmtLabel">Monthly Investment (₹)</label>
+          <input type="number" id="sip-amount" value="5000">
+        </div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Expected Return (%)</label><input type="number" id="sip-rate" value="12"></div>
+          <div class="input-group"><label class="input-label">Duration (Years)</label><input type="number" id="sip-years" value="10"></div>
+        </div>
+        <div id="swp-extra" style="display:none">
+          <div class="input-group"><label class="input-label">Initial Corpus (₹)</label><input type="number" id="swp-corpus" value="1000000"></div>
+        </div>
+        <button class="btn btn-cyan" onclick="calcSIP()" style="width:100%">Calculate</button>
+      </div>
+    </div>
+    <div class="card-3d">
+      <div class="section-title">Results</div>
+      <div id="sipResult">
+        <div class="empty-state"><div class="empty-icon">📊</div><p>Enter values and calculate</p></div>
+      </div>
+      <div id="sipChartWrap" style="display:none;margin-top:20px;">
+        <div class="section-title">Growth Chart</div>
+        <div class="bar-chart" id="sipChartBars"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="emi" class="page">
+  <div class="page-hero">
+    <h1>EMI <span>Calculator</span></h1>
+    <p>Home, car, personal loans — know your EMI</p>
+  </div>
+  <div class="chip-select">
+    <button class="chip active" onclick="setEMIType('home',this)">🏠 Home Loan</button>
+    <button class="chip" onclick="setEMIType('car',this)">🚗 Car Loan</button>
+    <button class="chip" onclick="setEMIType('personal',this)">👤 Personal</button>
+  </div>
+  <div class="two-col">
+    <div class="card-3d">
+      <div class="section-title">Loan Details</div>
+      <div class="input-group"><label class="input-label">Loan Amount (₹)</label><input type="number" id="emi-principal" value="2500000"></div>
+      <div class="row">
+        <div class="input-group"><label class="input-label">Interest Rate (% p.a.)</label><input type="number" id="emi-rate" value="8.5" step="0.1"></div>
+        <div class="input-group"><label class="input-label">Tenure (Years)</label><input type="number" id="emi-tenure" value="20"></div>
+      </div>
+      <button class="btn btn-gold" onclick="calcEMI()" style="width:100%">Calculate EMI</button>
+      <div id="emiResult" style="margin-top:20px;display:none">
+        <div class="result-box">
+          <div class="result-row"><span class="result-key">Monthly EMI</span><span class="result-val" id="emiMonthly" style="font-size:20px"></span></div>
+          <div class="result-row"><span class="result-key">Total Payment</span><span class="result-val cyan" id="emiTotal"></span></div>
+          <div class="result-row"><span class="result-key">Total Interest</span><span class="result-val red" id="emiInterest"></span></div>
+          <div class="result-row"><span class="result-key">Principal</span><span class="result-val green" id="emiPrincipal"></span></div>
+        </div>
+        <div style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span>Principal</span><span>Interest</span></div>
+          <div class="progress-wrap" style="height:10px;"><div class="progress-bar" id="emiProgressBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-3d">
+      <div class="section-title">Amortization Schedule (First 12 Months)</div>
+      <div id="emiSchedule">
+        <div class="empty-state"><div class="empty-icon">📋</div><p>Calculate EMI to see schedule</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="khata" class="page">
+  <div class="page-hero">
+    <h1>Khata <span>Book</span></h1>
+    <p>Track every rupee in and out — your personal ledger</p>
+  </div>
+  <div class="two-col">
+    <div class="card-3d">
+      <div class="section-title">Add Entry</div>
+      <div class="chip-select">
+        <button class="chip active" id="typeIncome" onclick="setEntryType('income')">💵 Income</button>
+        <button class="chip" id="typeExpense" onclick="setEntryType('expense')">🛒 Expense</button>
+      </div>
+      <div class="input-group"><label class="input-label">Description</label><input type="text" id="k-desc" placeholder="e.g. Salary, Groceries, Rent..."></div>
+      <div class="row">
+        <div class="input-group"><label class="input-label">Amount (₹)</label><input type="number" id="k-amount" placeholder="0"></div>
+        <div class="input-group"><label class="input-label">Date</label><input type="date" id="k-date"></div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Category</label>
+        <select id="k-category">
+          <optgroup label="Income">
+            <option value="Salary">💼 Salary</option>
+            <option value="Business">🏢 Business</option>
+            <option value="Investment">📈 Investment</option>
+            <option value="Freelance">💻 Freelance</option>
+            <option value="Other Income">🎁 Other Income</option>
+          </optgroup>
+          <optgroup label="Expense">
+            <option value="Food">🍛 Food & Dining</option>
+            <option value="Rent">🏠 Rent/EMI</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Utilities">💡 Utilities</option>
+            <option value="Health">🏥 Health</option>
+            <option value="Shopping">🛍 Shopping</option>
+            <option value="Education">📚 Education</option>
+            <option value="Entertainment">🎬 Entertainment</option>
+            <option value="Other Expense">📦 Other</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="input-group"><label class="input-label">Note (Optional)</label><textarea id="k-note" placeholder="Any additional notes..."></textarea></div>
+      <button class="btn btn-gold" onclick="addKhataEntry()" style="width:100%">Add Entry</button>
+    </div>
+
+    <div class="card-3d">
+      <div class="khata-toolbar">
+        <div class="section-title" style="margin-bottom:0">Transactions</div>
+        <div class="khata-toolbar-right">
+          <button class="btn-outline-green" onclick="exportKhataExcel()">⬇ Download Excel</button>
+          <button class="btn btn-red btn-sm" onclick="clearKhata()">Clear All</button>
+        </div>
+      </div>
+      <div id="khataList">
+        <div class="empty-state"><div class="empty-icon">📒</div><p>No entries yet. Start adding!</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="investments" class="page">
+  <div class="page-hero">
+    <h1><span class="purple">Investments</span> Tracker</h1>
+    <p>Track mutual funds & stocks, calculate returns, monitor your portfolio</p>
+  </div>
+
+  <div class="chip-select">
+    <button class="chip purple-chip active" onclick="setInvMode('mf',this)">📊 Mutual Funds</button>
+    <button class="chip purple-chip" onclick="setInvMode('stocks',this)">🏦 Stocks</button>
+    <button class="chip purple-chip" onclick="setInvMode('calc',this)">🧮 Return Calculator</button>
+  </div>
+
+  <div class="port-summary">
+    <div class="port-stat">
+      <div class="port-stat-val" id="port-invested">₹0</div>
+      <div class="port-stat-label">💰 Total Invested</div>
+    </div>
+    <div class="port-stat">
+      <div class="port-stat-val" id="port-current">₹0</div>
+      <div class="port-stat-label">📈 Current Value</div>
+    </div>
+    <div class="port-stat">
+      <div class="port-stat-val" id="port-pnl" style="color:var(--green)">₹0</div>
+      <div class="port-stat-label">🎯 Total P&L</div>
+    </div>
+  </div>
+
+  <div id="inv-mf" class="inv-mode-content active">
+
+    <!-- ===== FINANCE RULES ===== -->
+    <div style="margin-bottom:32px;">
+      <div class="section-title purple-title">📐 Investment Rules of Thumb</div>
+      <div style="font-size:13px;opacity:0.5;margin-top:-12px;margin-bottom:16px;">Proven allocation frameworks — enter your monthly income to see personalised split</div>
+
+      <div class="rules-grid">
+
+        <!-- 50-30-20 Rule -->
+        <div class="rule-card">
+          <div class="rule-name">50 / 30 / 20</div>
+          <div class="rule-tagline">The Budgeting Classic</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.2)">
+              <div class="rule-seg-pct" style="color:var(--red)">50%</div>
+              <div class="rule-seg-label">Needs</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2)">
+              <div class="rule-seg-pct" style="color:var(--cyan)">30%</div>
+              <div class="rule-seg-label">Wants</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2)">
+              <div class="rule-seg-pct" style="color:var(--green)">20%</div>
+              <div class="rule-seg-label">Savings</div>
+            </div>
+          </div>
+          <div class="rule-desc">Popularised by Elizabeth Warren. Allocate half your income to essentials (rent, bills, groceries), 30% on lifestyle, and 20% straight to savings or investments.</div>
+          <div class="rule-tags">
+            <span class="rule-tag gold">Budgeting</span>
+            <span class="rule-tag green">Beginner-Friendly</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Monthly Income (₹)" oninput="calcRule5030(this.value,'res-5030')" id="inc-5030">
+          </div>
+          <div class="rule-calc-result" id="res-5030">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--red)"></div><span class="rcr-text">Needs</span><span class="rcr-val" id="v5030-needs" style="color:var(--red)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--cyan)"></div><span class="rcr-text">Wants</span><span class="rcr-val" id="v5030-wants" style="color:var(--cyan)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--green)"></div><span class="rcr-text">Savings</span><span class="rcr-val" id="v5030-save" style="color:var(--green)"></span></div>
+          </div>
+        </div>
+
+        <!-- 100 Minus Age Rule -->
+        <div class="rule-card">
+          <div class="rule-name">100 − Age</div>
+          <div class="rule-tagline">Equity Allocation Rule</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2)">
+              <div class="rule-seg-pct" style="color:var(--purple)">100<br><span style="font-size:13px">− Age</span></div>
+              <div class="rule-seg-label">Equity %</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2)">
+              <div class="rule-seg-pct" style="color:var(--gold)">= Age</div>
+              <div class="rule-seg-label">Debt %</div>
+            </div>
+          </div>
+          <div class="rule-desc">A timeless equity-debt split. Subtract your age from 100 to get your equity (growth) allocation; the rest goes into debt (stability). At 30 → 70% equity, 30% debt.</div>
+          <div class="rule-tags">
+            <span class="rule-tag">Equity</span>
+            <span class="rule-tag gold">Debt</span>
+            <span class="rule-tag cyan">Asset Allocation</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Your Age" min="18" max="80" oninput="calcAge100(this.value,'res-age100')" id="inc-age100">
+          </div>
+          <div class="rule-calc-result" id="res-age100">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--purple)"></div><span class="rcr-text">Equity</span><span class="rcr-val" id="vage-eq" style="color:var(--purple)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Debt / FD</span><span class="rcr-val" id="vage-debt" style="color:var(--gold)"></span></div>
+          </div>
+        </div>
+
+        <!-- 6-Month Emergency Fund -->
+        <div class="rule-card">
+          <div class="rule-name">6× Monthly</div>
+          <div class="rule-tagline">Emergency Fund Rule</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2)">
+              <div class="rule-seg-pct" style="color:var(--cyan)">6x</div>
+              <div class="rule-seg-label">Safety Net</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2)">
+              <div class="rule-seg-pct" style="color:var(--green)">Liquid</div>
+              <div class="rule-seg-label">Asset Type</div>
+            </div>
+          </div>
+          <div class="rule-desc">Before investing in mutual funds, build an emergency corpus equal to 6 months of expenses. Keep it in a liquid fund, savings account, or FD for instant access.</div>
+          <div class="rule-tags">
+            <span class="rule-tag cyan">Emergency</span>
+            <span class="rule-tag green">Liquidity</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Monthly Expenses (₹)" oninput="calcEmergency(this.value,'res-emg')" id="inc-emg">
+          </div>
+          <div class="rule-calc-result" id="res-emg">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--cyan)"></div><span class="rcr-text">3-month corpus</span><span class="rcr-val" id="vemg-3" style="color:var(--cyan)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--green)"></div><span class="rcr-text">6-month corpus</span><span class="rcr-val" id="vemg-6" style="color:var(--green)"></span></div>
+          </div>
+        </div>
+
+        <!-- 10% SIP Rule -->
+        <div class="rule-card">
+          <div class="rule-name">10% SIP Rule</div>
+          <div class="rule-tagline">Start Small, Stay Consistent</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.2)">
+              <div class="rule-seg-pct" style="color:var(--gold)">10%</div>
+              <div class="rule-seg-label">Min SIP</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2)">
+              <div class="rule-seg-pct" style="color:var(--purple)">+1%</div>
+              <div class="rule-seg-label">Each Year</div>
+            </div>
+          </div>
+          <div class="rule-desc">Invest at least 10% of your take-home income monthly via SIP into diversified equity mutual funds. Increase it by 1% every year (Step-Up SIP) to accelerate wealth creation.</div>
+          <div class="rule-tags">
+            <span class="rule-tag gold">SIP</span>
+            <span class="rule-tag">Step-Up</span>
+            <span class="rule-tag green">Compounding</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Take-Home Income (₹)" oninput="calcSIPRule(this.value,'res-siprule')" id="inc-siprule">
+          </div>
+          <div class="rule-calc-result" id="res-siprule">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Min SIP (10%)</span><span class="rcr-val" id="vsip-min" style="color:var(--gold)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--purple)"></div><span class="rcr-text">Ideal SIP (15%)</span><span class="rcr-val" id="vsip-ideal" style="color:var(--purple)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--cyan)"></div><span class="rcr-text">Year 2 Step-Up</span><span class="rcr-val" id="vsip-step" style="color:var(--cyan)"></span></div>
+          </div>
+        </div>
+
+        <!-- Rule of 72 -->
+        <div class="rule-card">
+          <div class="rule-name">Rule of 72</div>
+          <div class="rule-tagline">Doubling Time Estimator</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2)">
+              <div class="rule-seg-pct" style="color:var(--green)">72</div>
+              <div class="rule-seg-label">Magic No.</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2)">
+              <div class="rule-seg-pct" style="color:var(--gold)">÷ Rate%</div>
+              <div class="rule-seg-label">= Years</div>
+            </div>
+          </div>
+          <div class="rule-desc">Divide 72 by your expected annual return to estimate how many years it takes to double your money. At 12% CAGR (typical equity MF), your money doubles in ~6 years.</div>
+          <div class="rule-tags">
+            <span class="rule-tag green">Compounding</span>
+            <span class="rule-tag cyan">Returns</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Expected Return (%)" min="1" max="30" oninput="calcRule72(this.value,'res-r72')" id="inc-r72">
+          </div>
+          <div class="rule-calc-result" id="res-r72">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--green)"></div><span class="rcr-text">Doubles in</span><span class="rcr-val" id="vr72-yrs" style="color:var(--green)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">4x in</span><span class="rcr-val" id="vr72-4x" style="color:var(--gold)"></span></div>
+          </div>
+        </div>
+
+        <!-- 4% Withdrawal Rule -->
+        <div class="rule-card">
+          <div class="rule-name">4% Rule</div>
+          <div class="rule-tagline">Safe Withdrawal / FIRE</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2)">
+              <div class="rule-seg-pct" style="color:var(--purple)">4%</div>
+              <div class="rule-seg-label">Annual WD</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2)">
+              <div class="rule-seg-pct" style="color:var(--cyan)">25×</div>
+              <div class="rule-seg-label">Corpus Need</div>
+            </div>
+          </div>
+          <div class="rule-desc">For retirement / FIRE planning: withdraw 4% of your corpus annually and it should last 30+ years. Conversely, your FIRE corpus target = 25× your annual expenses.</div>
+          <div class="rule-tags">
+            <span class="rule-tag">FIRE</span>
+            <span class="rule-tag cyan">Retirement</span>
+            <span class="rule-tag gold">Withdrawal</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Annual Expenses (₹)" oninput="calcRule4(this.value,'res-r4')" id="inc-r4">
+          </div>
+          <div class="rule-calc-result" id="res-r4">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--purple)"></div><span class="rcr-text">FIRE Corpus Needed</span><span class="rcr-val" id="vr4-corpus" style="color:var(--purple)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--cyan)"></div><span class="rcr-text">Monthly Withdrawable</span><span class="rcr-val" id="vr4-mo" style="color:var(--cyan)"></span></div>
+          </div>
+        </div>
+
+        <!-- 3X Insurance Rule -->
+        <div class="rule-card">
+          <div class="rule-name">10× Income</div>
+          <div class="rule-tagline">Life Insurance Cover Rule</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2)">
+              <div class="rule-seg-pct" style="color:var(--red)">10×</div>
+              <div class="rule-seg-label">Term Cover</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2)">
+              <div class="rule-seg-pct" style="color:var(--cyan)">Pure</div>
+              <div class="rule-seg-label">Term Only</div>
+            </div>
+          </div>
+          <div class="rule-desc">Your term life insurance cover should be at least 10× your annual income. Never mix insurance with investment — buy pure term plans and invest the premium difference.</div>
+          <div class="rule-tags">
+            <span class="rule-tag">Insurance</span>
+            <span class="rule-tag gold">Risk Cover</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Annual Income (₹)" oninput="calcInsurance(this.value,'res-ins')" id="inc-ins">
+          </div>
+          <div class="rule-calc-result" id="res-ins">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--red)"></div><span class="rcr-text">Min Cover (10×)</span><span class="rcr-val" id="vins-min" style="color:var(--red)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Ideal Cover (15×)</span><span class="rcr-val" id="vins-ideal" style="color:var(--gold)"></span></div>
+          </div>
+        </div>
+
+        <!-- 1% Rule for Real Estate -->
+        <div class="rule-card">
+          <div class="rule-name">1% Property</div>
+          <div class="rule-tagline">Real Estate Rental Rule</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2)">
+              <div class="rule-seg-pct" style="color:var(--green)">1%</div>
+              <div class="rule-seg-label">Monthly Rent</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2)">
+              <div class="rule-seg-pct" style="color:var(--gold)">of Cost</div>
+              <div class="rule-seg-label">Benchmark</div>
+            </div>
+          </div>
+          <div class="rule-desc">A rental property is a good investment if the monthly rent is at least 1% of its purchase price. E.g., a ₹50L property should generate ₹50,000/month rent to be worthwhile.</div>
+          <div class="rule-tags">
+            <span class="rule-tag green">Real Estate</span>
+            <span class="rule-tag gold">Rental Yield</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Property Value (₹)" oninput="calcPropertyRule(this.value,'res-prop')" id="inc-prop">
+          </div>
+          <div class="rule-calc-result" id="res-prop">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--green)"></div><span class="rcr-text">Min Monthly Rent</span><span class="rcr-val" id="vprop-rent" style="color:var(--green)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Annual Rental Income</span><span class="rcr-val" id="vprop-annual" style="color:var(--gold)"></span></div>
+          </div>
+        </div>
+
+        <!-- 120 Minus Age (Aggressive) -->
+        <div class="rule-card">
+          <div class="rule-name">120 − Age</div>
+          <div class="rule-tagline">Aggressive Equity Rule</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2)">
+              <div class="rule-seg-pct" style="color:var(--purple)">120<br><span style="font-size:13px">− Age</span></div>
+              <div class="rule-seg-label">Equity %</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2)">
+              <div class="rule-seg-pct" style="color:var(--cyan)">Rest</div>
+              <div class="rule-seg-label">Debt %</div>
+            </div>
+          </div>
+          <div class="rule-desc">A modern variation for longer life expectancy. With better healthcare, people live longer — so staying in equity longer makes sense. Use 120 instead of 100 for a more growth-oriented portfolio.</div>
+          <div class="rule-tags">
+            <span class="rule-tag">Aggressive</span>
+            <span class="rule-tag cyan">Modern</span>
+            <span class="rule-tag gold">Equity</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Your Age" min="18" max="90" oninput="calcAge120(this.value,'res-age120')" id="inc-age120">
+          </div>
+          <div class="rule-calc-result" id="res-age120">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--purple)"></div><span class="rcr-text">Equity Allocation</span><span class="rcr-val" id="vage120-eq" style="color:var(--purple)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--cyan)"></div><span class="rcr-text">Debt Allocation</span><span class="rcr-val" id="vage120-debt" style="color:var(--cyan)"></span></div>
+          </div>
+        </div>
+
+        <!-- 3-Bucket Retirement Rule -->
+        <div class="rule-card">
+          <div class="rule-name">3-Bucket Rule</div>
+          <div class="rule-tagline">Retirement Portfolio Strategy</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2)">
+              <div class="rule-seg-pct" style="color:var(--cyan)">Now</div>
+              <div class="rule-seg-label">0–2 Yrs</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2)">
+              <div class="rule-seg-pct" style="color:var(--gold)">Soon</div>
+              <div class="rule-seg-label">3–10 Yrs</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2)">
+              <div class="rule-seg-pct" style="color:var(--purple)">Later</div>
+              <div class="rule-seg-label">10+ Yrs</div>
+            </div>
+          </div>
+          <div class="rule-desc">Split retirement savings into 3 buckets: Bucket 1 (liquid, 2 years expenses), Bucket 2 (bonds/hybrid, 3–10 yrs), Bucket 3 (equity/MF for 10+ yrs growth). Refill buckets annually.</div>
+          <div class="rule-tags">
+            <span class="rule-tag cyan">Retirement</span>
+            <span class="rule-tag green">Liquidity</span>
+            <span class="rule-tag">Strategy</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Annual Expenses (₹)" oninput="calcBucket(this.value,'res-bucket')" id="inc-bucket">
+          </div>
+          <div class="rule-calc-result" id="res-bucket">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--cyan)"></div><span class="rcr-text">Bucket 1 (Liquid)</span><span class="rcr-val" id="vbkt-1" style="color:var(--cyan)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Bucket 2 (Bonds)</span><span class="rcr-val" id="vbkt-2" style="color:var(--gold)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--purple)"></div><span class="rcr-text">Bucket 3 (Equity)</span><span class="rcr-val" id="vbkt-3" style="color:var(--purple)"></span></div>
+          </div>
+        </div>
+
+        <!-- Pay Yourself First -->
+        <div class="rule-card">
+          <div class="rule-name">Pay Yourself First</div>
+          <div class="rule-tagline">Reverse Budgeting Rule</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2)">
+              <div class="rule-seg-pct" style="color:var(--green)">Save</div>
+              <div class="rule-seg-label">1st Transfer</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2)">
+              <div class="rule-seg-pct" style="color:var(--red)">Spend</div>
+              <div class="rule-seg-label">What's Left</div>
+            </div>
+          </div>
+          <div class="rule-desc">The moment salary hits your account, auto-transfer your investment amount first. Spend only what remains. This guarantees savings discipline and removes the temptation to spend before saving.</div>
+          <div class="rule-tags">
+            <span class="rule-tag green">Discipline</span>
+            <span class="rule-tag">Automation</span>
+            <span class="rule-tag gold">Habit</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Monthly Salary (₹)" oninput="calcPayFirst(this.value,'res-payfirst')" id="inc-payfirst">
+          </div>
+          <div class="rule-calc-result" id="res-payfirst">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--green)"></div><span class="rcr-text">Auto-invest (20%)</span><span class="rcr-val" id="vpf-invest" style="color:var(--green)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Emergency top-up (5%)</span><span class="rcr-val" id="vpf-emg" style="color:var(--gold)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--red)"></div><span class="rcr-text">Spending budget</span><span class="rcr-val" id="vpf-spend" style="color:var(--red)"></span></div>
+          </div>
+        </div>
+
+        <!-- Debt-to-Income Rule -->
+        <div class="rule-card">
+          <div class="rule-name">36% DTI Rule</div>
+          <div class="rule-tagline">Debt-to-Income Safety Limit</div>
+          <div class="rule-segments">
+            <div class="rule-seg" style="background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2)">
+              <div class="rule-seg-pct" style="color:var(--green)">≤36%</div>
+              <div class="rule-seg-label">Safe Zone</div>
+            </div>
+            <div class="rule-seg" style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2)">
+              <div class="rule-seg-pct" style="color:var(--red)">&gt;50%</div>
+              <div class="rule-seg-label">Danger</div>
+            </div>
+          </div>
+          <div class="rule-desc">Total monthly debt payments (EMIs: home, car, personal loans) should not exceed 36% of gross monthly income. Above 50% is a danger zone that limits future borrowing capacity and investment ability.</div>
+          <div class="rule-tags">
+            <span class="rule-tag green">Safe Zone</span>
+            <span class="rule-tag gold">EMI</span>
+            <span class="rule-tag cyan">Debt Management</span>
+          </div>
+          <div class="rule-calc-strip">
+            <input type="number" placeholder="Gross Monthly Income (₹)" oninput="calcDTI(this.value,'res-dti')" id="inc-dti">
+          </div>
+          <div class="rule-calc-result" id="res-dti">
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--green)"></div><span class="rcr-text">Safe EMI limit (36%)</span><span class="rcr-val" id="vdti-safe" style="color:var(--green)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--gold)"></div><span class="rcr-text">Caution zone (43%)</span><span class="rcr-val" id="vdti-warn" style="color:var(--gold)"></span></div>
+            <div class="rcr-item"><div class="rcr-dot" style="background:var(--red)"></div><span class="rcr-text">Danger zone (50%)</span><span class="rcr-val" id="vdti-danger" style="color:var(--red)"></span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- ===== END FINANCE RULES ===== -->
+
+    <div class="two-col">
+      <div class="card-3d">
+        <div class="section-title purple-title">Add Mutual Fund</div>
+        <div class="input-group"><label class="input-label">Fund Name</label><input type="text" id="mf-name" placeholder="e.g. Mirae Asset Large Cap Fund"></div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Investment Type</label>
+            <select id="mf-type">
+              <option value="lumpsum">Lump Sum</option>
+              <option value="sip">SIP</option>
+            </select>
+          </div>
+          <div class="input-group"><label class="input-label">Invested Amount (₹)</label><input type="number" id="mf-invested" placeholder="50000"></div>
+        </div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Current Value (₹)</label><input type="number" id="mf-current" placeholder="65000"></div>
+          <div class="input-group"><label class="input-label">Investment Date</label><input type="date" id="mf-date"></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Fund Category</label>
+          <select id="mf-cat">
+            <option>Large Cap</option>
+            <option>Mid Cap</option>
+            <option>Small Cap</option>
+            <option>Flexi Cap</option>
+            <option>ELSS</option>
+            <option>Debt</option>
+            <option>Hybrid</option>
+            <option>Index Fund</option>
+            <option>ETF</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <button class="btn btn-purple" onclick="addMF()" style="width:100%">Add Fund</button>
+      </div>
+      <div class="card-3d">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="section-title purple-title" style="margin-bottom:0">My Mutual Funds</div>
+        </div>
+        <div id="mfList">
+          <div class="empty-state"><div class="empty-icon">📊</div><p>Add your mutual funds above</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="inv-stocks" class="inv-mode-content">
+    <div class="two-col">
+      <div class="card-3d">
+        <div class="section-title purple-title">Add Stock / ETF</div>
+        <div class="input-group"><label class="input-label">Company / Ticker</label><input type="text" id="st-name" placeholder="e.g. Reliance / TCS / HDFCBANK"></div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Buy Price (₹)</label><input type="number" id="st-buy" placeholder="2400" step="0.01"></div>
+          <div class="input-group"><label class="input-label">Quantity</label><input type="number" id="st-qty" placeholder="10"></div>
+        </div>
+        <div class="row">
+          <div class="input-group"><label class="input-label">Current Price (₹)</label><input type="number" id="st-current" placeholder="2800" step="0.01"></div>
+          <div class="input-group"><label class="input-label">Buy Date</label><input type="date" id="st-date"></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Sector</label>
+          <select id="st-sector">
+            <option>Technology</option><option>Banking & Finance</option><option>FMCG</option>
+            <option>Pharma</option><option>Auto</option><option>Energy</option>
+            <option>Infrastructure</option><option>Metals</option><option>Telecom</option><option>Other</option>
+          </select>
+        </div>
+        <button class="btn btn-purple" onclick="addStock()" style="width:100%">Add to Portfolio</button>
+      </div>
+      <div class="card-3d">
+        <div class="section-title purple-title">Stock Portfolio</div>
+        <div id="stockList">
+          <div class="empty-state"><div class="empty-icon">🏦</div><p>Add stocks to your portfolio</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="inv-calc" class="inv-mode-content">
+    <div class="two-col">
+      <div class="card-3d">
+        <div class="section-title purple-title">Return Calculator</div>
+        <div class="chip-select">
+          <button class="chip purple-chip active" onclick="setReturnMode('abs',this)">Absolute Return</button>
+          <button class="chip purple-chip" onclick="setReturnMode('cagr',this)">CAGR</button>
+          <button class="chip purple-chip" onclick="setReturnMode('xirr',this)">XIRR (SIP)</button>
+        </div>
+
+        <div id="rc-abs" class="inv-mode-content active">
+          <div class="input-group"><label class="input-label">Invested Amount (₹)</label><input type="number" id="abs-invested" value="100000"></div>
+          <div class="input-group"><label class="input-label">Current Value (₹)</label><input type="number" id="abs-current" value="135000"></div>
+          <button class="btn btn-purple" onclick="calcAbsolute()" style="width:100%">Calculate</button>
+        </div>
+
+        <div id="rc-cagr" class="inv-mode-content">
+          <div class="input-group"><label class="input-label">Initial Value (₹)</label><input type="number" id="cagr-initial" value="100000"></div>
+          <div class="input-group"><label class="input-label">Final Value (₹)</label><input type="number" id="cagr-final" value="200000"></div>
+          <div class="input-group"><label class="input-label">Duration (Years)</label><input type="number" id="cagr-years" value="5" step="0.5"></div>
+          <button class="btn btn-purple" onclick="calcCAGR()" style="width:100%">Calculate CAGR</button>
+        </div>
+
+        <div id="rc-xirr" class="inv-mode-content">
+          <div class="input-group"><label class="input-label">Monthly SIP Amount (₹)</label><input type="number" id="xirr-sip" value="5000"></div>
+          <div class="row">
+            <div class="input-group"><label class="input-label">Duration (Months)</label><input type="number" id="xirr-months" value="24"></div>
+            <div class="input-group"><label class="input-label">Current Value (₹)</label><input type="number" id="xirr-current" value="135000"></div>
+          </div>
+          <div style="font-size:11px;opacity:0.5;margin-bottom:12px;">XIRR is estimated using iterative NPV calculation</div>
+          <button class="btn btn-purple" onclick="calcXIRR()" style="width:100%">Calculate XIRR</button>
+        </div>
+      </div>
+
+      <div class="card-3d sticky-summary">
+        <div class="section-title purple-title">Return Analysis</div>
+        <div id="returnResult">
+          <div class="empty-state"><div class="empty-icon">🧮</div><p>Enter values and calculate</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="goals" class="page">
+  <div class="page-hero">
+    <h1>Financial <span>Goals</span></h1>
+    <p>Set targets, track progress, achieve dreams</p>
+  </div>
+  <div class="two-col">
+    <div class="card-3d">
+      <div class="section-title">Add New Goal</div>
+      <div class="input-group"><label class="input-label">Goal Name</label><input type="text" id="g-name" placeholder="e.g. New Car, Vacation, Retirement..."></div>
+      <div class="row">
+        <div class="input-group"><label class="input-label">Target Amount (₹)</label><input type="number" id="g-target" placeholder="500000"></div>
+        <div class="input-group"><label class="input-label">Saved So Far (₹)</label><input type="number" id="g-saved" placeholder="0"></div>
+      </div>
+      <div class="row">
+        <div class="input-group"><label class="input-label">Target Date</label><input type="date" id="g-date"></div>
+        <div class="input-group">
+          <label class="input-label">Category</label>
+          <select id="g-icon">
+            <option value="🏠">🏠 Home</option><option value="🚗">🚗 Vehicle</option>
+            <option value="✈️">✈️ Travel</option><option value="📚">📚 Education</option>
+            <option value="💍">💍 Wedding</option><option value="🏥">🏥 Emergency</option>
+            <option value="🎯">🎯 Other</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="addGoal()" style="width:100%">Add Goal</button>
+    </div>
+    <div class="card-3d">
+      <div class="section-title">Active Goals</div>
+      <div id="goalsList">
+        <div class="empty-state"><div class="empty-icon">🎯</div><p>No goals set yet. Dream big!</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ===== STATE =====
+let khataData = JSON.parse(localStorage.getItem('khataData') || '[]');
+let goalsData = JSON.parse(localStorage.getItem('goalsData') || '[]');
+let mfData    = JSON.parse(localStorage.getItem('mfData')    || '[]');
+let stockData = JSON.parse(localStorage.getItem('stockData') || '[]');
+let currentEntryType  = 'income';
+let currentSavingsMode = 'compound';
+let currentSIPMode     = 'sip';
+let currentInvMode     = 'mf';
+let currentReturnMode  = 'abs';
+
+// ===== UTILS =====
+const fmt  = n => '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:0});
+const fmtL = n => {
+  if(Math.abs(n) >= 10000000) return '₹' + (n/10000000).toFixed(2) + ' Cr';
+  if(Math.abs(n) >= 100000)   return '₹' + (n/100000).toFixed(2) + ' L';
+  return fmt(n);
+};
+const fmtD = n => {
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+};
+
+function showToast(msg='✓ Saved!') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== TABS =====
+function switchTab(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  (el || event.currentTarget).classList.add('active');
+  if(id === 'dashboard') updateDashboard();
+  if(id === 'investments') updatePortfolioSummary();
+}
+
+// ===== SAVINGS CALCULATOR =====
+function setSavingsMode(mode, el) {
+  currentSavingsMode = mode;
+  document.querySelectorAll('#savings .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  ['compound','fd','goal'].forEach(m => {
+    document.getElementById('mode-'+m).style.display = m === mode ? 'block' : 'none';
+  });
+  document.getElementById('savingsResult').innerHTML = `<div class="empty-state"><div class="empty-icon">🧮</div><p>Enter values and calculate</p></div>`;
+  document.getElementById('savingsBarChart').style.display = 'none';
+}
+
+function calcCompound() {
+  const P = +document.getElementById('ci-principal').value;
+  const r = +document.getElementById('ci-rate').value / 100;
+  const t = +document.getElementById('ci-years').value;
+  const n = +document.getElementById('ci-freq').value;
+  if(!P||!r||!t) return;
+  const A = P * Math.pow(1 + r/n, n*t);
+  const interest = A - P;
+  document.getElementById('savingsResult').innerHTML = `<div class="result-box">
+    <div class="result-row"><span class="result-key">Principal</span><span class="result-val">${fmt(P)}</span></div>
+    <div class="result-row"><span class="result-key">Total Interest</span><span class="result-val green">${fmt(interest)}</span></div>
+    <div class="result-row"><span class="result-key">Maturity Amount</span><span class="result-val" style="font-size:18px">${fmtL(A)}</span></div>
+    <div class="result-row"><span class="result-key">Wealth Gained</span><span class="result-val green">${((interest/P)*100).toFixed(1)}%</span></div>
+  </div>`;
+  const years = Math.min(t, 20);
+  const bars = document.getElementById('savingsChartBars');
+  bars.innerHTML = '';
+  let vals = [], maxV = 0;
+  for(let y=1; y<=years; y++) { const v = P*Math.pow(1+r/n,n*y); vals.push(v); if(v>maxV) maxV=v; }
+  vals.forEach((v,i) => {
+    const h = (v/maxV)*90;
+    bars.innerHTML += `<div class="bar" style="height:${h}px" title="${fmt(v)}"><div class="tooltip">${fmt(v)}</div></div>
+      <div class="bar invested" style="height:${(P/maxV)*90}px"><div class="tooltip">${fmt(P)}</div></div>`;
+  });
+  document.getElementById('chartMaxYear').textContent = 'Y'+years;
+  document.getElementById('savingsBarChart').style.display = 'block';
+}
+
+function calcFD() {
+  const P = +document.getElementById('fd-amount').value;
+  const r = +document.getElementById('fd-rate').value / 100;
+  const t = +document.getElementById('fd-years').value;
+  const tax = +document.getElementById('fd-tax').value / 100;
+  if(!P||!r||!t) return;
+  const A = P * Math.pow(1 + r/4, 4*t);
+  const gross = A - P;
+  const taxAmt = gross * tax;
+  const net = gross - taxAmt;
+  document.getElementById('savingsResult').innerHTML = `<div class="result-box">
+    <div class="result-row"><span class="result-key">Deposit</span><span class="result-val">${fmt(P)}</span></div>
+    <div class="result-row"><span class="result-key">Gross Interest</span><span class="result-val green">${fmt(gross)}</span></div>
+    <div class="result-row"><span class="result-key">Tax Deducted</span><span class="result-val red">${fmt(taxAmt)}</span></div>
+    <div class="result-row"><span class="result-key">Net Interest</span><span class="result-val green">${fmt(net)}</span></div>
+    <div class="result-row"><span class="result-key">Maturity Amount</span><span class="result-val" style="font-size:18px">${fmtL(P+net)}</span></div>
+    <div class="result-row"><span class="result-key">Effective Return</span><span class="result-val green">${((net/P)*100).toFixed(2)}%</span></div>
+  </div>`;
+  document.getElementById('savingsBarChart').style.display = 'none';
+}
+
+function calcGoal() {
+  const target = +document.getElementById('goal-target').value;
+  const current = +document.getElementById('goal-current').value;
+  const years = +document.getElementById('goal-years').value;
+  const rate = +document.getElementById('goal-rate').value / 100 / 12;
+  const n = years * 12;
+  if(!target||!years) return;
+  const fv = target - current * Math.pow(1+rate*12, years);
+  const pmt = fv * rate / (Math.pow(1+rate, n) - 1);
+  document.getElementById('savingsResult').innerHTML = `<div class="result-box">
+    <div class="result-row"><span class="result-key">Target</span><span class="result-val">${fmtL(target)}</span></div>
+    <div class="result-row"><span class="result-key">Monthly Saving Needed</span><span class="result-val" style="font-size:18px">${fmt(Math.max(0,pmt))}</span></div>
+    <div class="result-row"><span class="result-key">Total to Invest</span><span class="result-val cyan">${fmtL(Math.max(0,pmt)*n)}</span></div>
+    <div class="result-row"><span class="result-key">Wealth from Returns</span><span class="result-val green">${fmtL(target - Math.max(0,pmt)*n - current)}</span></div>
+  </div>`;
+  document.getElementById('savingsBarChart').style.display = 'none';
+}
+
+// ===== SIP/SWP =====
+function setSIPMode(mode, el) {
+  currentSIPMode = mode;
+  document.querySelectorAll('#sip .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const labels = { sip:['Monthly Investment (₹)','SIP Calculator'], swp:['Monthly Withdrawal (₹)','SWP Calculator'], lumpsum:['Investment Amount (₹)','Lump Sum Calculator'] };
+  document.getElementById('sipAmtLabel').textContent = labels[mode][0];
+  document.getElementById('sipFormTitle').textContent = labels[mode][1];
+  document.getElementById('swp-extra').style.display = mode === 'swp' ? 'block' : 'none';
+  document.getElementById('sipResult').innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>Enter values and calculate</p></div>`;
+  document.getElementById('sipChartWrap').style.display = 'none';
+}
+
+function calcSIP() {
+  const amt = +document.getElementById('sip-amount').value;
+  const rate = +document.getElementById('sip-rate').value / 100;
+  const years = +document.getElementById('sip-years').value;
+  if(!amt||!rate||!years) return;
+  let result = ''; let chartData = [];
+  if(currentSIPMode === 'lumpsum') {
+    const A = amt * Math.pow(1+rate, years);
+    result = `<div class="result-box">
+      <div class="result-row"><span class="result-key">Invested</span><span class="result-val">${fmtL(amt)}</span></div>
+      <div class="result-row"><span class="result-key">Returns</span><span class="result-val green">${fmtL(A-amt)}</span></div>
+      <div class="result-row"><span class="result-key">Total Value</span><span class="result-val" style="font-size:18px">${fmtL(A)}</span></div>
+      <div class="result-row"><span class="result-key">CAGR</span><span class="result-val green">${(rate*100).toFixed(1)}%</span></div>
+    </div>`;
+    for(let y=1;y<=years;y++) chartData.push(amt*Math.pow(1+rate,y));
+  } else if(currentSIPMode === 'sip') {
+    const mr = rate / 12; const n = years * 12;
+    const A = amt * ((Math.pow(1+mr,n)-1)/mr) * (1+mr);
+    const invested = amt * n;
+    result = `<div class="result-box">
+      <div class="result-row"><span class="result-key">Monthly SIP</span><span class="result-val">${fmt(amt)}</span></div>
+      <div class="result-row"><span class="result-key">Total Invested</span><span class="result-val cyan">${fmtL(invested)}</span></div>
+      <div class="result-row"><span class="result-key">Returns Earned</span><span class="result-val green">${fmtL(A-invested)}</span></div>
+      <div class="result-row"><span class="result-key">Maturity Value</span><span class="result-val" style="font-size:18px">${fmtL(A)}</span></div>
+      <div class="result-row"><span class="result-key">Wealth Ratio</span><span class="result-val green">${(A/invested).toFixed(2)}x</span></div>
+    </div>`;
+    for(let y=1;y<=years;y++) { const nn=y*12; chartData.push(amt*((Math.pow(1+mr,nn)-1)/mr)*(1+mr)); }
+  } else {
+    const corpus = +document.getElementById('swp-corpus').value;
+    const mr = rate / 12; const n = years * 12;
+    const remaining = corpus * Math.pow(1+mr,n) - amt * ((Math.pow(1+mr,n)-1)/mr);
+    const total = amt * n;
+    result = `<div class="result-box">
+      <div class="result-row"><span class="result-key">Initial Corpus</span><span class="result-val">${fmtL(corpus)}</span></div>
+      <div class="result-row"><span class="result-key">Monthly Withdrawal</span><span class="result-val">${fmt(amt)}</span></div>
+      <div class="result-row"><span class="result-key">Total Withdrawn</span><span class="result-val cyan">${fmtL(total)}</span></div>
+      <div class="result-row"><span class="result-key">Remaining Corpus</span><span class="result-val ${remaining>0?'green':'red'}">${fmtL(Math.abs(remaining))} ${remaining<0?'(Depleted)':''}</span></div>
+    </div>`;
+    for(let y=1;y<=years;y++) { const nn=y*12; chartData.push(Math.max(0,corpus*Math.pow(1+mr,nn)-amt*((Math.pow(1+mr,nn)-1)/mr))); }
+  }
+  document.getElementById('sipResult').innerHTML = result;
+  const maxV = Math.max(...chartData);
+  const bars = document.getElementById('sipChartBars');
+  bars.innerHTML = chartData.map(v => `<div class="bar" style="height:${maxV?(v/maxV)*90:0}px"><div class="tooltip">${fmtL(v)}</div></div>`).join('');
+  document.getElementById('sipChartWrap').style.display = 'block';
+}
+
+// ===== EMI =====
+function setEMIType(type, el) {
+  document.querySelectorAll('#emi .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const presets = { home:[2500000,8.5,20], car:[800000,9.5,7], personal:[500000,14,5] };
+  const [p,r,t] = presets[type];
+  document.getElementById('emi-principal').value = p;
+  document.getElementById('emi-rate').value = r;
+  document.getElementById('emi-tenure').value = t;
+}
+
+function calcEMI() {
+  const P = +document.getElementById('emi-principal').value;
+  const r = +document.getElementById('emi-rate').value / 100 / 12;
+  const n = +document.getElementById('emi-tenure').value * 12;
+  if(!P||!r||!n) return;
+  const emi = P * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
+  const total = emi * n;
+  const interest = total - P;
+  document.getElementById('emiMonthly').textContent = fmt(emi);
+  document.getElementById('emiTotal').textContent = fmtL(total);
+  document.getElementById('emiInterest').textContent = fmtL(interest);
+  document.getElementById('emiPrincipal').textContent = fmt(P);
+  document.getElementById('emiResult').style.display = 'block';
+  const pPct = (P/total)*100;
+  setTimeout(() => document.getElementById('emiProgressBar').style.width = pPct + '%', 100);
+  let bal = P;
+  let schedHtml = `<div style="overflow-y:auto;max-height:320px">
+    <div class="emi-row" style="font-weight:700;opacity:0.7;font-size:11px;">
+      <span>Month</span><span>Principal</span><span>Interest</span><span>Balance</span>
+    </div>`;
+  for(let i=1;i<=12;i++){
+    const int = bal * r;
+    const prin = emi - int;
+    bal = Math.max(0, bal - prin);
+    schedHtml += `<div class="emi-row">
+      <span>${i}</span>
+      <span style="color:var(--green)">${fmt(prin)}</span>
+      <span style="color:var(--red)">${fmt(int)}</span>
+      <span>${fmt(bal)}</span>
+    </div>`;
+  }
+  schedHtml += '</div>';
+  document.getElementById('emiSchedule').innerHTML = schedHtml;
+}
+
+// ===== KHATA =====
+function setEntryType(type) {
+  currentEntryType = type;
+  document.getElementById('typeIncome').classList.toggle('active', type==='income');
+  document.getElementById('typeExpense').classList.toggle('active', type==='expense');
+}
+
+function addKhataEntry() {
+  const desc = document.getElementById('k-desc').value.trim();
+  const amt  = +document.getElementById('k-amount').value;
+  const date = document.getElementById('k-date').value;
+  const cat  = document.getElementById('k-category').value;
+  const note = document.getElementById('k-note').value.trim();
+  if(!desc||!amt||!date) { showToast('⚠️ Fill all required fields'); return; }
+  khataData.unshift({ id:Date.now(), type:currentEntryType, desc, amt, date, cat, note });
+  localStorage.setItem('khataData', JSON.stringify(khataData));
+  renderKhata(); updateDashboard();
+  document.getElementById('k-desc').value = '';
+  document.getElementById('k-amount').value = '';
+  document.getElementById('k-note').value = '';
+  showToast('✓ Entry added!');
+}
+
+function deleteEntry(id) {
+  khataData = khataData.filter(e => e.id !== id);
+  localStorage.setItem('khataData', JSON.stringify(khataData));
+  renderKhata(); updateDashboard();
+}
+
+function clearKhata() {
+  if(!confirm('Clear all entries?')) return;
+  khataData = [];
+  localStorage.setItem('khataData', JSON.stringify(khataData));
+  renderKhata(); updateDashboard();
+}
+
+function renderKhata() {
+  const list = document.getElementById('khataList');
+  if(!khataData.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📒</div><p>No entries yet. Start adding!</p></div>';
+    return;
+  }
+  list.innerHTML = khataData.slice(0,50).map(e => `
+    <div class="khata-entry">
+      <div class="entry-icon ${e.type==='income'?'income-icon':'expense-icon'}">${getCatIcon(e.cat)}</div>
+      <div class="entry-details">
+        <div class="entry-name">${e.desc}</div>
+        <div class="entry-meta">${e.cat} · ${e.date}${e.note?' · '+e.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="entry-amount ${e.type==='income'?'result-val green':'result-val red'}">
+          ${e.type==='income'?'+':'-'}${fmt(e.amt)}
+        </div>
+        <button onclick="deleteEntry(${e.id})" style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:15px;color:white" title="Delete">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function getCatIcon(cat) {
+  const icons = {Salary:'💼',Business:'🏢',Investment:'📈',Freelance:'💻',Food:'🍛',Rent:'🏠',Transport:'🚗',Utilities:'💡',Health:'🏥',Shopping:'🛍',Education:'📚',Entertainment:'🎬','Other Income':'🎁','Other Expense':'📦'};
+  return icons[cat] || '💰';
+}
+
+// ===== EXCEL EXPORT =====
+function exportKhataExcel() {
+  if(!khataData.length) { showToast('⚠️ No transactions to export'); return; }
+  const ws_data = [
+    ['#','Date','Type','Category','Description','Amount (₹)','Note']
+  ];
+  khataData.forEach((e,i) => {
+    ws_data.push([
+      i+1,
+      e.date,
+      e.type.charAt(0).toUpperCase()+e.type.slice(1),
+      e.cat,
+      e.desc,
+      e.type==='income' ? e.amt : -e.amt,
+      e.note || ''
+    ]);
+  });
+  // Summary rows
+  const income  = khataData.filter(e=>e.type==='income').reduce((s,e)=>s+e.amt,0);
+  const expense = khataData.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amt,0);
+  ws_data.push([]);
+  ws_data.push(['','','','','Total Income',income,'']);
+  ws_data.push(['','','','','Total Expense',-expense,'']);
+  ws_data.push(['','','','','Net Savings',income-expense,'']);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+  // Column widths
+  ws['!cols'] = [{wch:4},{wch:12},{wch:10},{wch:16},{wch:30},{wch:14},{wch:24}];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+  // Category sheet
+  const cats = {};
+  khataData.forEach(e => { if(!cats[e.cat]) cats[e.cat]={income:0,expense:0}; cats[e.cat][e.type]+=e.amt; });
+  const cs = [['Category','Income (₹)','Expense (₹)','Net (₹)']];
+  Object.entries(cats).forEach(([c,v]) => cs.push([c,v.income||0,v.expense||0,(v.income||0)-(v.expense||0)]));
+  const ws2 = XLSX.utils.aoa_to_sheet(cs);
+  ws2['!cols'] = [{wch:20},{wch:14},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Category Summary');
+
+  const date = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `FinVault_Transactions_${date}.xlsx`);
+  showToast('✅ Excel downloaded!');
+}
+
+// ===== GOALS =====
+function addGoal() {
+  const name   = document.getElementById('g-name').value.trim();
+  const target = +document.getElementById('g-target').value;
+  const saved  = +document.getElementById('g-saved').value;
+  const date   = document.getElementById('g-date').value;
+  const icon   = document.getElementById('g-icon').value;
+  if(!name||!target||!date) { showToast('⚠️ Fill all fields'); return; }
+  goalsData.push({ id:Date.now(), name, target, saved, date, icon });
+  localStorage.setItem('goalsData', JSON.stringify(goalsData));
+  renderGoals(); updateDashboard();
+  showToast('🎯 Goal added!');
+  document.getElementById('g-name').value='';
+  document.getElementById('g-target').value='';
+  document.getElementById('g-saved').value='';
+}
+
+function deleteGoal(id) {
+  goalsData = goalsData.filter(g => g.id !== id);
+  localStorage.setItem('goalsData', JSON.stringify(goalsData));
+  renderGoals(); updateDashboard();
+}
+
+function renderGoals() {
+  const list = document.getElementById('goalsList');
+  if(!goalsData.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>No goals set yet. Dream big!</p></div>';
+    return;
+  }
+  list.innerHTML = goalsData.map(g => {
+    const pct = Math.min(100, (g.saved/g.target)*100);
+    const remaining = g.target - g.saved;
+    const daysLeft = Math.ceil((new Date(g.date) - new Date()) / 86400000);
+    return `
+    <div class="card-3d" style="margin-bottom:14px;padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-size:20px;margin-bottom:3px">${g.icon}</div>
+          <div style="font-weight:700;font-size:14px">${g.name}</div>
+          <div style="font-size:11px;opacity:0.5">${daysLeft>0?daysLeft+' days left':'Deadline passed'} · ${g.date}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="result-val" style="font-size:15px">${fmtL(g.target)}</div>
+          <div style="font-size:10px;opacity:0.5">target</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span style="color:var(--green)">${fmtL(g.saved)} saved</span>
+        <span style="color:var(--red)">${fmtL(remaining)} left</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar" style="width:${pct}%;background:${pct>=100?'var(--green)':'linear-gradient(90deg,var(--gold),var(--cyan))'}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <span class="badge ${pct>=100?'badge-green':pct>=50?'badge-gold':'badge-cyan'}">${pct.toFixed(1)}% complete</span>
+        <button onclick="deleteGoal(${g.id})" class="btn btn-red btn-sm">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== INVESTMENTS =====
+function setInvMode(mode, el) {
+  currentInvMode = mode;
+  
+  // 1. Remove active state from all chips in the investments tab
+  document.querySelectorAll('#investments .chip.purple-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  
+  // 2. Safely hide/show ONLY the main containers, preserving the inner .two-col layouts
+  ['mf', 'stocks', 'calc'].forEach(m => {
+    const section = document.getElementById('inv-' + m);
+    if(section) {
+      section.style.display = (m === mode) ? 'block' : 'none';
+    }
+  });
+}
+
+function setReturnMode(mode, el) {
+  currentReturnMode = mode;
+  document.querySelectorAll('#inv-calc .chip.purple-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  ['abs','cagr','xirr'].forEach(m => {
+    document.getElementById('rc-'+m).style.display = m===mode ? 'block' : 'none';
+    document.getElementById('rc-'+m).classList.toggle('active', m===mode);
+  });
+  document.getElementById('returnResult').innerHTML = `<div class="empty-state"><div class="empty-icon">🧮</div><p>Enter values and calculate</p></div>`;
+}
+
+function addMF() {
+  const name     = document.getElementById('mf-name').value.trim();
+  const type     = document.getElementById('mf-type').value;
+  const invested = +document.getElementById('mf-invested').value;
+  const current  = +document.getElementById('mf-current').value;
+  const date     = document.getElementById('mf-date').value;
+  const cat      = document.getElementById('mf-cat').value;
+  if(!name||!invested||!current) { showToast('⚠️ Fill all required fields'); return; }
+  mfData.push({ id:Date.now(), name, type, invested, current, date, cat });
+  localStorage.setItem('mfData', JSON.stringify(mfData));
+  renderMF(); updatePortfolioSummary(); updateDashboard();
+  document.getElementById('mf-name').value='';
+  document.getElementById('mf-invested').value='';
+  document.getElementById('mf-current').value='';
+  showToast('📊 Fund added!');
+}
+
+function deleteMF(id) {
+  mfData = mfData.filter(m => m.id !== id);
+  localStorage.setItem('mfData', JSON.stringify(mfData));
+  renderMF(); updatePortfolioSummary(); updateDashboard();
+}
+
+function renderMF() {
+  const list = document.getElementById('mfList');
+  if(!mfData.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Add your mutual funds above</p></div>';
+    return;
+  }
+  list.innerHTML = mfData.map(m => {
+    const pnl  = m.current - m.invested;
+    const ret  = ((pnl / m.invested)*100);
+    const years = m.date ? (new Date()-new Date(m.date))/(365.25*86400000) : null;
+    const cagr  = years && years > 0 ? (Math.pow(m.current/m.invested, 1/years)-1)*100 : null;
+    return `
+    <div class="khata-entry">
+      <div class="entry-icon" style="background:rgba(167,139,250,0.15);font-size:18px">📊</div>
+      <div class="entry-details">
+        <div class="entry-name">${m.name}</div>
+        <div class="entry-meta">${m.cat} · ${m.type} ${m.date?'· '+m.date:''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--purple)">${fmtL(m.current)}</div>
+        <div class="return-pill ${pnl>=0?'up':'down'}">${pnl>=0?'▲':'▼'} ${Math.abs(ret).toFixed(1)}% ${cagr?'| CAGR '+Math.abs(cagr).toFixed(1)+'%':''}</div>
+      </div>
+      <button onclick="deleteMF(${m.id})" style="background:none;border:none;cursor:pointer;opacity:0.35;font-size:14px;color:white">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== ENHANCED STOCK LOGIC =====
+function addStock() {
+  const name    = document.getElementById('st-name').value.trim();
+  const buy     = parseFloat(document.getElementById('st-buy').value);
+  const qty     = parseFloat(document.getElementById('st-qty').value);
+  const current = parseFloat(document.getElementById('st-current').value);
+  const date    = document.getElementById('st-date').value;
+  const sector  = document.getElementById('st-sector').value;
+
+  // Error Handling & Validation
+  if(!name) { showToast('⚠️ Enter Stock Name'); return; }
+  if(isNaN(buy) || buy <= 0) { showToast('⚠️ Invalid Buy Price'); return; }
+  if(isNaN(qty) || qty <= 0) { showToast('⚠️ Invalid Quantity'); return; }
+  if(isNaN(current) || current < 0) { showToast('⚠️ Invalid Current Price'); return; }
+
+  const newStock = { 
+    id: Date.now(), 
+    name: name.toUpperCase(), 
+    buy, 
+    qty, 
+    current, 
+    date: date || new Date().toISOString().split('T')[0], 
+    sector 
+  };
+
+  stockData.push(newStock);
+  localStorage.setItem('stockData', JSON.stringify(stockData));
+  
+  // Update UI
+  renderStocks(); 
+  updatePortfolioSummary(); 
+  updateDashboard();
+  
+  // Reset Form
+  ['st-name', 'st-buy', 'st-qty', 'st-current'].forEach(id => document.getElementById(id).value = '');
+  showToast('🏦 Stock added to Portfolio!');
+}
+
+function renderStocks() {
+  const list = document.getElementById('stockList');
+  if (!stockData || stockData.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🏦</div><p>No stocks in portfolio. Add your first holding!</p></div>';
+    return;
+  }
+
+  let html = `
+    <div class="inv-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Holding</th>
+            <th>Avg. Cost</th>
+            <th>Current Value</th>
+            <th>P&L (Total)</th>
+            <th>Return</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  stockData.forEach(s => {
+    const totalInvested = s.buy * s.qty;
+    const currentValue  = s.current * s.qty;
+    const pnl           = currentValue - totalInvested;
+    const retPercent    = (pnl / totalInvested) * 100;
+
+    html += `
+      <tr class="stock-row">
+        <td>
+          <div style="color:var(--white); font-weight:600;">${s.name}</div>
+          <div style="font-size:10px; opacity:0.6;">${s.qty} Qty • ${s.sector}</div>
+        </td>
+        <td>
+          <div style="font-size:12px;">${fmt(s.buy)}</div>
+          <div style="font-size:10px; opacity:0.5;">Cost: ${fmtL(totalInvested)}</div>
+        </td>
+        <td style="color:var(--purple); font-weight:500;">
+          ${fmtL(currentValue)}
+          <div style="font-size:10px; opacity:0.5; color:var(--white)">@ ${fmt(s.current)}</div>
+        </td>
+        <td class="${pnl >= 0 ? 'green' : 'red'}" style="font-family:'JetBrains Mono';">
+          ${pnl >= 0 ? '+' : ''}${fmtL(pnl)}
+        </td>
+        <td>
+          <span class="return-pill ${retPercent >= 0 ? 'up' : 'down'}">
+            ${retPercent >= 0 ? '▲' : '▼'} ${Math.abs(retPercent).toFixed(2)}%
+          </span>
+        </td>
+        <td>
+          <button onclick="deleteStock(${s.id})" style="background:none; border:none; cursor:pointer; color:var(--red); opacity:0.7;">✕</button>
+        </td>
+      </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  list.innerHTML = html;
+}
+
+function deleteStock(id) {
+  if(confirm('Are you sure you want to remove this stock?')) {
+    stockData = stockData.filter(s => s.id !== id);
+    localStorage.setItem('stockData', JSON.stringify(stockData));
+    renderStocks();
+    updatePortfolioSummary();
+    updateDashboard();
+    showToast('🗑️ Stock removed');
+  }
+}
+
+function updatePortfolioSummary() {
+  let totalInvested = 0, totalCurrent = 0;
+  mfData.forEach(m => { totalInvested+=m.invested; totalCurrent+=m.current; });
+  stockData.forEach(s => { totalInvested+=s.buy*s.qty; totalCurrent+=s.current*s.qty; });
+  const pnl = totalCurrent - totalInvested;
+  document.getElementById('port-invested').textContent = fmtL(totalInvested);
+  document.getElementById('port-current').textContent  = fmtL(totalCurrent);
+  const pnlEl = document.getElementById('port-pnl');
+  pnlEl.textContent = (pnl>=0?'+':'')+fmtL(pnl);
+  pnlEl.style.color = pnl>=0 ? 'var(--green)' : 'var(--red)';
+}
+
+// ===== FINANCE RULES CALCULATORS =====
+function showRuleResult(id) {
+  const el = document.getElementById(id);
+  if(el) { el.style.display = 'flex'; }
+}
+
+function calcRule5030(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  document.getElementById('v5030-needs').textContent = fmtL(v * 0.50);
+  document.getElementById('v5030-wants').textContent = fmtL(v * 0.30);
+  document.getElementById('v5030-save').textContent  = fmtL(v * 0.20);
+  showRuleResult(resId);
+}
+
+function calcAge100(val, resId) {
+  const age = parseFloat(val);
+  if(!age || age < 10 || age > 90) { document.getElementById(resId).style.display='none'; return; }
+  const equity = Math.max(0, 100 - age);
+  const debt   = 100 - equity;
+  document.getElementById('vage-eq').textContent   = equity + '%';
+  document.getElementById('vage-debt').textContent = debt + '%';
+  showRuleResult(resId);
+}
+
+function calcEmergency(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  document.getElementById('vemg-3').textContent = fmtL(v * 3);
+  document.getElementById('vemg-6').textContent = fmtL(v * 6);
+  showRuleResult(resId);
+}
+
+function calcSIPRule(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  const min   = v * 0.10;
+  const ideal = v * 0.15;
+  const step  = min * 1.01;
+  document.getElementById('vsip-min').textContent  = fmtL(min);
+  document.getElementById('vsip-ideal').textContent= fmtL(ideal);
+  document.getElementById('vsip-step').textContent = fmtL(step);
+  showRuleResult(resId);
+}
+
+function calcRule72(val, resId) {
+  const r = parseFloat(val);
+  if(!r || r <= 0) { document.getElementById(resId).style.display='none'; return; }
+  const yrs2x = (72 / r).toFixed(1);
+  const yrs4x = (2 * 72 / r).toFixed(1);
+  document.getElementById('vr72-yrs').textContent = yrs2x + ' years';
+  document.getElementById('vr72-4x').textContent  = yrs4x + ' years';
+  showRuleResult(resId);
+}
+
+function calcRule4(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  const corpus = v * 25;
+  const monthly = (corpus * 0.04) / 12;
+  document.getElementById('vr4-corpus').textContent = fmtL(corpus);
+  document.getElementById('vr4-mo').textContent     = fmtL(monthly);
+  showRuleResult(resId);
+}
+
+function calcInsurance(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  document.getElementById('vins-min').textContent   = fmtL(v * 10);
+  document.getElementById('vins-ideal').textContent = fmtL(v * 15);
+  showRuleResult(resId);
+}
+
+function calcPropertyRule(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  const rent = v * 0.01;
+  document.getElementById('vprop-rent').textContent   = fmtL(rent);
+  document.getElementById('vprop-annual').textContent = fmtL(rent * 12);
+  showRuleResult(resId);
+}
+
+function calcAge120(val, resId) {
+  const age = parseFloat(val);
+  if(!age || age < 10 || age > 100) { document.getElementById(resId).style.display='none'; return; }
+  const equity = Math.max(0, Math.min(100, 120 - age));
+  const debt   = 100 - equity;
+  document.getElementById('vage120-eq').textContent   = equity + '%';
+  document.getElementById('vage120-debt').textContent = debt + '%';
+  showRuleResult(resId);
+}
+
+function calcBucket(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  document.getElementById('vbkt-1').textContent = fmtL(v * 2);
+  document.getElementById('vbkt-2').textContent = fmtL(v * 8);
+  document.getElementById('vbkt-3').textContent = fmtL(v * 20);
+  showRuleResult(resId);
+}
+
+function calcPayFirst(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  document.getElementById('vpf-invest').textContent = fmtL(v * 0.20);
+  document.getElementById('vpf-emg').textContent    = fmtL(v * 0.05);
+  document.getElementById('vpf-spend').textContent  = fmtL(v * 0.75);
+  showRuleResult(resId);
+}
+
+function calcDTI(val, resId) {
+  const v = parseFloat(val);
+  if(!v || v <= 0) { document.getElementById(resId).style.display='none'; return; }
+  document.getElementById('vdti-safe').textContent   = fmtL(v * 0.36);
+  document.getElementById('vdti-warn').textContent   = fmtL(v * 0.43);
+  document.getElementById('vdti-danger').textContent = fmtL(v * 0.50);
+  showRuleResult(resId);
+}
+
+// ===== RETURN CALCULATORS =====
+function calcAbsolute() {
+  const inv = +document.getElementById('abs-invested').value;
+  const cur = +document.getElementById('abs-current').value;
+  if(!inv||!cur) return;
+  const pnl = cur - inv;
+  const absRet = ((pnl/inv)*100);
+  document.getElementById('returnResult').innerHTML = `<div class="result-box">
+    <div class="result-row"><span class="result-key">Invested</span><span class="result-val">${fmtL(inv)}</span></div>
+    <div class="result-row"><span class="result-key">Current Value</span><span class="result-val purple">${fmtL(cur)}</span></div>
+    <div class="result-row"><span class="result-key">P & L</span><span class="result-val ${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${fmtL(pnl)}</span></div>
+    <div class="result-row"><span class="result-key">Absolute Return</span><span class="result-val ${pnl>=0?'green':'red'}" style="font-size:20px">${absRet.toFixed(2)}%</span></div>
+    <div class="result-row"><span class="result-key">Wealth Multiplier</span><span class="result-val purple">${(cur/inv).toFixed(2)}x</span></div>
+  </div>`;
+}
+
+function calcCAGR() {
+  const initial = +document.getElementById('cagr-initial').value;
+  const final_v = +document.getElementById('cagr-final').value;
+  const years   = +document.getElementById('cagr-years').value;
+  if(!initial||!final_v||!years) return;
+  const cagr = (Math.pow(final_v/initial, 1/years)-1)*100;
+  const pnl  = final_v - initial;
+  const absRet = ((pnl/initial)*100);
+  document.getElementById('returnResult').innerHTML = `<div class="result-box">
+    <div class="result-row"><span class="result-key">Initial Value</span><span class="result-val">${fmtL(initial)}</span></div>
+    <div class="result-row"><span class="result-key">Final Value</span><span class="result-val purple">${fmtL(final_v)}</span></div>
+    <div class="result-row"><span class="result-key">Duration</span><span class="result-val">${years} years</span></div>
+    <div class="result-row"><span class="result-key">Absolute Return</span><span class="result-val ${pnl>=0?'green':'red'}">${absRet.toFixed(2)}%</span></div>
+    <div class="result-row"><span class="result-key">CAGR</span><span class="result-val purple" style="font-size:20px">${cagr.toFixed(2)}%</span></div>
+    <div class="result-row"><span class="result-key">Wealth Multiplier</span><span class="result-val green">${(final_v/initial).toFixed(2)}x</span></div>
+  </div>`;
+}
+
+function calcXIRR() {
+  const sip     = +document.getElementById('xirr-sip').value;
+  const months  = +document.getElementById('xirr-months').value;
+  const current = +document.getElementById('xirr-current').value;
+  if(!sip||!months||!current) return;
+  // Estimate XIRR using Newton-Raphson approximation on NPV
+  const cashflows = [];
+  for(let i=0; i<months; i++) cashflows.push({ amount:-sip, t:i/12 });
+  cashflows.push({ amount:current, t:months/12 });
+  let rate = 0.12;
+  for(let iter=0; iter<200; iter++) {
+    let npv=0, dnpv=0;
+    cashflows.forEach(cf => {
+      npv  += cf.amount / Math.pow(1+rate, cf.t);
+      dnpv += -cf.t * cf.amount / Math.pow(1+rate, cf.t+1);
+    });
+    const newRate = rate - npv/dnpv;
+    if(Math.abs(newRate-rate) < 1e-7) break;
+    rate = newRate;
+  }
+  const invested = sip * months;
+  const pnl      = current - invested;
+  const absRet   = ((pnl/invested)*100);
+  document.getElementById('returnResult').innerHTML = `<div class="result-box">
+    <div class="result-row"><span class="result-key">Monthly SIP</span><span class="result-val">${fmt(sip)}</span></div>
+    <div class="result-row"><span class="result-key">Duration</span><span class="result-val">${months} months</span></div>
+    <div class="result-row"><span class="result-key">Total Invested</span><span class="result-val cyan">${fmtL(invested)}</span></div>
+    <div class="result-row"><span class="result-key">Current Value</span><span class="result-val purple">${fmtL(current)}</span></div>
+    <div class="result-row"><span class="result-key">Absolute Return</span><span class="result-val ${pnl>=0?'green':'red'}">${absRet.toFixed(2)}%</span></div>
+    <div class="result-row"><span class="result-key">XIRR (Annualised)</span><span class="result-val purple" style="font-size:20px">${(rate*100).toFixed(2)}%</span></div>
+  </div>`;
+}
+
+// ===== DASHBOARD =====
+function updateDashboard() {
+  const income  = khataData.filter(e=>e.type==='income').reduce((s,e)=>s+e.amt,0);
+  const expense = khataData.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amt,0);
+  const savings = income - expense;
+  const goalsSaved = goalsData.reduce((s,g)=>s+(g.saved||0),0);
+
+  // Investment portfolio value
+  let portCurrent  = 0;
+  mfData.forEach(m => portCurrent+=m.current);
+  stockData.forEach(s => portCurrent+=s.current*s.qty);
+
+  // Net Worth
+  const netWorth = savings + portCurrent + goalsSaved;
+
+  document.getElementById('nw-total').textContent        = fmtL(netWorth);
+  document.getElementById('nw-savings').textContent      = fmtL(savings);
+  document.getElementById('nw-investments').textContent  = fmtL(portCurrent);
+  document.getElementById('nw-goals-saved').textContent  = fmtL(goalsSaved);
+
+  document.getElementById('ds-income').textContent    = fmtL(income);
+  document.getElementById('ds-expense').textContent   = fmtL(expense);
+  document.getElementById('ds-savings').textContent   = fmtL(savings);
+  document.getElementById('ds-portfolio').textContent = fmtL(portCurrent);
+  document.getElementById('ds-count').textContent     = khataData.length;
+
+  const rate = income > 0 ? (savings/income)*100 : 0;
+  document.getElementById('savingsRate').textContent = rate.toFixed(1) + '%';
+  setTimeout(() => document.getElementById('savingsProgress').style.width = Math.max(0,Math.min(100,rate))+'%', 100);
+
+  // Recent Activity
+  const recent = document.getElementById('recentActivity');
+  if(!khataData.length) {
+    recent.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Add transactions in Khata Book</p></div>';
+  } else {
+    recent.innerHTML = khataData.slice(0,5).map(e => `
+      <div class="khata-entry" style="margin-bottom:8px">
+        <div class="entry-icon ${e.type==='income'?'income-icon':'expense-icon'}">${getCatIcon(e.cat)}</div>
+        <div class="entry-details">
+          <div class="entry-name" style="font-size:13px">${e.desc}</div>
+          <div class="entry-meta">${e.date}</div>
+        </div>
+        <div class="entry-amount ${e.type==='income'?'result-val green':'result-val red'}" style="font-size:13px">
+          ${e.type==='income'?'+':'-'}${fmt(e.amt)}
+        </div>
+      </div>`).join('');
+  }
+
+  // Portfolio mini on dashboard
+  const dashPort = document.getElementById('dashPortfolio');
+  if(!mfData.length && !stockData.length) {
+    dashPort.innerHTML = '<div class="empty-state"><div class="empty-icon">💹</div><p>Add investments in the Investments tab</p></div>';
+  } else {
+    let portInvested = 0;
+    mfData.forEach(m => portInvested+=m.invested);
+    stockData.forEach(s => portInvested+=s.buy*s.qty);
+    const portPnl = portCurrent - portInvested;
+    dashPort.innerHTML = `
+      <div class="result-box" style="margin-top:0">
+        <div class="result-row"><span class="result-key">Total Invested</span><span class="result-val">${fmtL(portInvested)}</span></div>
+        <div class="result-row"><span class="result-key">Current Value</span><span class="result-val purple">${fmtL(portCurrent)}</span></div>
+        <div class="result-row"><span class="result-key">Total P&L</span><span class="result-val ${portPnl>=0?'green':'red'}">${portPnl>=0?'+':''}${fmtL(portPnl)}</span></div>
+        <div class="result-row"><span class="result-key">Mutual Funds</span><span class="result-val cyan">${mfData.length} fund${mfData.length!==1?'s':''}</span></div>
+        <div class="result-row"><span class="result-key">Stocks</span><span class="result-val cyan">${stockData.length} holding${stockData.length!==1?'s':''}</span></div>
+      </div>`;
+  }
+
+  // Donut chart
+  if(expense > 0) {
+    const cats = {};
+    khataData.filter(e=>e.type==='expense').forEach(e => { cats[e.cat] = (cats[e.cat]||0)+e.amt; });
+    const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const colors = ['#f5c842','#00e5ff','#ff4d6d','#00ff9d','#a78bfa'];
+    const total  = sorted.reduce((s,c)=>s+c[1],0);
+    let offset = 0;
+    const r=50, cx=70, cy=70, circ=2*Math.PI*r;
+    let paths='';
+    sorted.forEach(([cat,amt],i) => {
+      const frac = amt/total;
+      const dash = frac*circ;
+      paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="22"
+        stroke-dasharray="${dash} ${circ-dash}"
+        stroke-dashoffset="${-offset*circ/(2*Math.PI)}"
+        style="filter:drop-shadow(0 0 6px ${colors[i]}40)"
+        transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += frac*circ;
+    });
+    document.getElementById('donutSvg').innerHTML = paths +
+      `<text x="70" y="68" text-anchor="middle" fill="rgba(240,244,255,0.8)" font-size="10" font-family="Syne" font-weight="700">Expense</text>
+       <text x="70" y="82" text-anchor="middle" fill="var(--gold)" font-size="11" font-family="JetBrains Mono">${fmtL(total)}</text>`;
+    document.getElementById('donutLegend').innerHTML = sorted.map(([cat,amt],i) => `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${colors[i]};box-shadow:0 0 6px ${colors[i]}"></div>
+        <span style="flex:1;font-size:12px">${cat}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${colors[i]}">${fmt(amt)}</span>
+      </div>`).join('');
+  }
+}
+
+// ===== INIT =====
+document.getElementById('k-date').valueAsDate = new Date();
+document.getElementById('g-date').valueAsDate = new Date(Date.now()+365*86400000);
+document.getElementById('mf-date').valueAsDate = new Date();
+document.getElementById('st-date').valueAsDate  = new Date();
+
+// Fix investments tab display on init
+document.getElementById('inv-stocks').style.display = 'none';
+document.getElementById('inv-calc').style.display   = 'none';
+
+renderKhata();
+renderGoals();
+renderMF();
+renderStocks();
+updatePortfolioSummary();
+updateDashboard();
+</script>
+</body>
+</html>
